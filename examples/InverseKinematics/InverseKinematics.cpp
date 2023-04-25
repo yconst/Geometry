@@ -32,6 +32,48 @@ float norm(const Matrix<n>& vec) {
     return sqrt(sum);
 }
 
+// Function to calculate the Jacobian of a serial robot manipulator with revolute joints
+template <int NumJoints>
+BLA::Matrix<6, NumJoints> jacobian(Link& end_effector) {
+    // Initialize the 6xNumJoints Jacobian matrix
+    BLA::Matrix<6, NumJoints> J;
+
+    // Initialize the current pose with the end effector's pose in the last joint space
+    Geometry::Pose current_pose = end_effector.pose;
+
+    // Iterate through the robot manipulator's joints (starting from the first child link)
+    Link* current_link = end_effector.parent;
+
+    while (current_link)
+    {
+        
+    }
+
+    for (int i = 0; i < NumJoints; ++i) {
+        const Joint& joint = *current_link->joint;
+
+        // Calculate the joint axis in the world frame
+        Geometry::Twist joint_axis_in_world = current_pose * joint.axis;
+
+        // Compute the partial derivative of the end-effector's position with respect to the current joint variable
+        // and store it in the first 3 rows of the corresponding column in the Jacobian matrix
+        J.Submatrix<3, 1>(0, i) = Geometry::skew(joint_axis_in_world.Submatrix<3, 1>(0, 0)) * (current_link->pose.p - current_pose.p);
+        
+        // Compute the partial derivative of the end-effector's orientation with respect to the current joint variable
+        // and store it in the last 3 rows of the corresponding column in the Jacobian matrix
+        J.Submatrix<3, 1>(3, i) = joint_axis_in_world.Submatrix<3, 1>(0, 0);
+
+        // Update the current pose by multiplying it with the current link's pose
+        current_pose = current_pose * current_link->pose;
+
+        // Move on to the next link in the chain
+        current_link = current_link->child;
+    }
+
+    // Return the Jacobian matrix
+    return J;
+}
+
 bool inverse_kinematics(Link& end_effector, const Geometry::Pose& target_pose, float step_size, int max_iterations, float tolerance)
 {
     for (int i = 0; i < max_iterations; ++i)
@@ -49,7 +91,7 @@ bool inverse_kinematics(Link& end_effector, const Geometry::Pose& target_pose, f
         }
 
         // Calculate the Jacobian matrix
-        BLA::Matrix<6, 6> J = BLA::Zeros<6, 6>();
+        BLA::Matrix<6, 6> J = jacobian(end_effector);
 
         // Compute the change in joint angles
         BLA::Matrix<6> delta_twist = BLA::Zeros<6>();

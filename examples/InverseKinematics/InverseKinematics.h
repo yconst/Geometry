@@ -33,9 +33,10 @@ class Link
          const Geometry::Translation& xyz = {0, 0, 0}, const Geometry::EulerAngles& rpy = {0, 0, 0});
 };
 
-Matrix<3> cross_product(const Matrix<3>& a, const Matrix<3>& b);
-
 template <int n>
 float norm(const Matrix<n>& vec);
+
+template <int NumJoints>
+BLA::Matrix<6, NumJoints> jacobian(const Link& base_link);
 
 bool inverse_kinematics(Link& end_effector, const Geometry::Pose& target_pose, float step_size, int max_iterations, float tolerance);
